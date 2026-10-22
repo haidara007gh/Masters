@@ -45,30 +45,36 @@ Machine-generated and **not yet verified by a Tajweed expert**. A sample should 
 
 ---
 
-## Idgham dataset (v0.2, text and reference phonemes only)
+## Idgham dataset (v0.3, text and reference phonemes only)
 
-Scope: **Idgham bi-ghunnah and Idgham bila-ghunnah only** (noon sakinah / tanween merging into the following letter). Same format and rules as the Iqlab dataset: ayah-by-ayah, Hafs, closed-lip `m̃` Iqlab nasal, no recordings yet. Other Idgham types (shafawi, mutamathilayn, mutajanisayn, mutaqaribayn) were removed from this version.
+Scope: **Idgham bi-ghunnah and bila-ghunnah**, split by the letter that follows the noon sakinah / tanween. Same format and rules as the Iqlab dataset: ayah-by-ayah, Hafs, closed-lip `m̃` Iqlab nasal, no recordings yet.
 
 ### Files
 
 | File | Contents |
 |---|---|
-| `data/idgham_dataset.csv` | One row per (type, ayah). `tajweed_target` is `idgham_bi_ghunnah` or `idgham_bila_ghunnah`. An ayah with both types appears twice. |
+| `data/idgham_dataset.csv` | One row per (target, ayah). An ayah with several targets appears once per target. |
 | `data/idgham_sites.csv` | Individual sites: word position, trigger word, next word, and `cross_word` / `within_word` scope |
 
-### Types
+### Targets
 
-| `tajweed_target` | Following letters | Ayahs | Sites |
+| `tajweed_target` | Following letter | Ayahs | Sites |
 |---|---|---:|---:|
-| `idgham_bi_ghunnah` | ي ن م و | 2,512 | 3,935 |
-| `idgham_bila_ghunnah` | ل ر | 905 | 1,035 |
+| `idgham_bi_ghunnah_ya` | ي | 798 | 970 |
+| `idgham_bi_ghunnah_nun` | ن | 196 | 205 |
+| `idgham_bi_ghunnah_meem` | م | 1,114 | 1,300 |
+| `idgham_bi_ghunnah_waw` | و | 1,130 | 1,460 |
+| `idgham_bila_ghunnah_lam` | ل | 675 | 748 |
+| `idgham_bila_ghunnah_ra` | ر | 277 | 287 |
+
+Totals: 3,935 bi-ghunnah sites and 1,035 bila-ghunnah sites (4,190 rows).
 
 ### Method and validation
 
-Occurrences come from the Qur'anic Phonemizer's explicit rule labels (`quranic-phonemizer` 3.0.5). An independent rule-based check on the text (`scripts/idgham_check.py`) reproduces the phonemizer's counts apart from explained cases: the letter name `نٓ` (68:1), the sakt reading of `مَنْ رَاقٍ` (75:27), and word-index offsets in the checker.
+Occurrences come from the Qur'anic Phonemizer's explicit rule labels (`quranic-phonemizer` 3.0.5). An independent rule-based check on the text (`scripts/idgham_check.py`) reproduces the phonemizer's counts apart from explained cases: the letter name `نٓ` (68:1), the sakt reading of `مَنْ رَاقٍ` (75:27), and word-index offsets in the checker. The following letter is taken from the first letter of the next word.
 
 ### Notes
 
 - Tanween or noon before the article ٱل is not Idgham (hamza wasl drops, so it is izhar); the phonemizer follows this.
-- Two `within_word` bi-ghunnah sites are the huroof muqatta'at `طسٓمٓ` (26:1, 28:1); decide whether to keep them for recording.
+- Two `within_word` sites are the huroof muqatta'at `طسٓمٓ` (26:1, 28:1), counted under `idgham_bi_ghunnah_meem`; decide whether to keep them for recording.
 - Same caveat as Iqlab: machine-generated, not yet verified by a Tajweed expert.
