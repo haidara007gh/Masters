@@ -1,7 +1,6 @@
 import json, csv, collections
 D=json.load(open('code/idgham_all.json',encoding='utf-8'))
-ORDER=['idgham_bi_ghunnah','idgham_bila_ghunnah','idgham_shafawi','idgham_mutamathilayn',
-       'idgham_mutajanisayn_kamil','idgham_mutajanisayn_naqis','idgham_mutaqaribayn']
+ORDER=['idgham_bi_ghunnah','idgham_bila_ghunnah']
 rows=[]
 for t in ORDER:
     ks=sorted({(s['surah'],s['ayah']) for s in D['sites'] if s['rule']==t})
