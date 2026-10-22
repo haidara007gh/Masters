@@ -4,8 +4,8 @@ def is_mark(c): return unicodedata.category(c) in ('Mn','Mc','Me') or c=='ـ'
 def first_letter(w):
     for c in w:
         if not is_mark(c): return c
-LET={'ي':'ya','ن':'nun','م':'meem','و':'waw','ل':'lam','ر':'ra'}
-FAM={'idgham_bi_ghunnah':{'ya','nun','meem','waw'},'idgham_bila_ghunnah':{'lam','ra'}}
+LET={'ي':'yaa','ن':'noon','م':'meem','و':'waw','ل':'lam','ر':'raa'}  # names follow the Qur'anic Phonemizer's rule descriptions
+FAM={'idgham_bi_ghunnah':{'yaa','noon','meem','waw'},'idgham_bila_ghunnah':{'lam','raa'}}
 sites=[]
 for s in D['sites']:
     if s['rule'] not in FAM: continue
@@ -16,8 +16,8 @@ for s in D['sites']:
     t=f"{s['rule']}_{nm}" if s['rule']=='idgham_bila_ghunnah' else f"idgham_bi_ghunnah_{nm}"
     sites.append(dict(t=t,surah=s['surah'],ayah=s['ayah'],pos='-'.join(r.split(':')[2] for r in s['word_refs']),
                       w1=s['words'][0],w2=s['words'][1] if len(s['words'])>1 else '',scope=scope))
-ORDER=['idgham_bi_ghunnah_ya','idgham_bi_ghunnah_nun','idgham_bi_ghunnah_meem','idgham_bi_ghunnah_waw',
-       'idgham_bila_ghunnah_lam','idgham_bila_ghunnah_ra']
+ORDER=['idgham_bi_ghunnah_yaa','idgham_bi_ghunnah_noon','idgham_bi_ghunnah_meem','idgham_bi_ghunnah_waw',
+       'idgham_bila_ghunnah_lam','idgham_bila_ghunnah_raa']
 rows=[]
 for t in ORDER:
     for (su,ay) in sorted({(x['surah'],x['ayah']) for x in sites if x['t']==t}):

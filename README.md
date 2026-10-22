@@ -47,7 +47,7 @@ Machine-generated and **not yet verified by a Tajweed expert**. A sample should 
 
 ## Idgham dataset (v0.3, text and reference phonemes only)
 
-Scope: **Idgham bi-ghunnah and bila-ghunnah**, split by the letter that follows the noon sakinah / tanween. Same format and rules as the Iqlab dataset: ayah-by-ayah, Hafs, closed-lip `m̃` Iqlab nasal, no recordings yet.
+Scope: **Idgham bi-ghunnah and bila-ghunnah**, split by the letter that follows the noon sakinah / tanween. Target names follow the Qur'anic Phonemizer's letter names (noon, yaa, raa, meem, waw, lam). Same format and rules as the Iqlab dataset: ayah-by-ayah, Hafs, closed-lip `m̃` Iqlab nasal, no recordings yet.
 
 ### Files
 
@@ -60,12 +60,12 @@ Scope: **Idgham bi-ghunnah and bila-ghunnah**, split by the letter that follows 
 
 | `tajweed_target` | Following letter | Ayahs | Sites |
 |---|---|---:|---:|
-| `idgham_bi_ghunnah_ya` | ي | 798 | 970 |
-| `idgham_bi_ghunnah_nun` | ن | 196 | 205 |
+| `idgham_bi_ghunnah_yaa` | ي | 798 | 970 |
+| `idgham_bi_ghunnah_noon` | ن | 196 | 205 |
 | `idgham_bi_ghunnah_meem` | م | 1,114 | 1,300 |
 | `idgham_bi_ghunnah_waw` | و | 1,130 | 1,460 |
 | `idgham_bila_ghunnah_lam` | ل | 675 | 748 |
-| `idgham_bila_ghunnah_ra` | ر | 277 | 287 |
+| `idgham_bila_ghunnah_raa` | ر | 277 | 287 |
 
 Totals: 3,935 bi-ghunnah sites and 1,035 bila-ghunnah sites (4,190 rows).
 
