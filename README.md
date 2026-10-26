@@ -109,7 +109,7 @@ python scripts/push_to_hf.py             # upload as a PRIVATE dataset: <usernam
 ```
 
 - **Split:** speaker-disjoint. `--holdout hudhaify` (default) makes that reciter the `test` split, and the rest are `train`. With only 10 ayahs the split is not ayah-disjoint, so test scores will be optimistic.
-- **Private by default.** The audio licence has not been checked; do not use `--public` until it has.
+- **Private by default** (`--public` to publish). The audio licence has **not** been checked. If the dataset is made public, the dataset card carries reciter attribution, source links, a statement that the maintainer claims no rights over the audio, and a takedown route (a Discussion on the dataset's Community tab). Refresh the card with `python scripts/push_to_hf.py --update-card`.
 - Reading the audio back for training needs a decoder (`pip install torchcodec`, or load with `Audio(decode=False)` and decode the bytes with `soundfile`).
 
 ## Local viewer

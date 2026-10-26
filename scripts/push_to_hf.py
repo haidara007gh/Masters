@@ -13,12 +13,13 @@ Split: one reciter is held out as `test` (speaker-disjoint); everything else is 
 import argparse, csv, sys
 from pathlib import Path
 
-CARD = """\
+START, END = "<!-- card:start -->", "<!-- card:end -->"
+CARD = START + """
 # Quran tajweed pilot: Iqlab (professional reciters)
 
-Pilot dataset for Qur'anic recitation assessment (MSc project). One row per recording
-(ayah x reciter). **Text and reference phonemes are machine-generated and not yet verified
-by a Tajweed expert.**
+Pilot dataset for Qur'anic recitation assessment (MSc project): ayah-level recordings by professional
+reciters, with Uthmani text and reference phonemes. **Text and reference phonemes are machine-generated
+and not yet verified by a Tajweed expert.**
 
 ## Columns
 - `id`: `<speaker_id>_<SSSAAA>`
@@ -27,16 +28,41 @@ by a Tajweed expert.**
 - `speaker_id`: reciter
 - `audio`: 16 kHz mono recitation of the ayah
 - `ayah_uthmani`: Uthmani text of the ayah
-- `phoneme_ref`: reference phonemes (Hafs, ayah-by-ayah with a stop at the ayah end,
-  closed-lip `m̃` for Iqlab), from Quranic Phonemizer 3.0.5
+- `phoneme_ref`: reference phonemes (Hafs, ayah-by-ayah with a stop at the ayah end, closed-lip `m̃` for
+  Iqlab), from Quranic Phonemizer 3.0.5
 - `phoneme_realized`: empty. Recitations were not annotated; they are assumed correct.
 - `duration_s`, `source_url`: provenance
 
+## Reciters and sources
+Audio comes from [EveryAyah](https://everyayah.com), which hosts recitations by their reciters:
+Mishary Alafasy (`alafasy`), Mahmoud Khalil Al-Husary (`husary`), Mohamed Siddiq Al-Minshawi, Murattal
+(`minshawy`) and Ali Al-Hudhaify (`hudhaify`). Each row's `source_url` points to the original file.
+Reference phonemes: [Quranic Phonemizer](https://pypi.org/project/quranic-phonemizer/) (MIT).
+
+## Rights and takedown
+The recitations are the work of their reciters (and of their publishers or owners where applicable); the
+dataset maintainer claims no rights over the audio and grants no licence for it. It is shared for
+non-commercial research and recitation learning, with attribution to the reciters. If you hold rights to
+a recording and want it removed, open a Discussion on this dataset's Community tab and it will be
+removed promptly.
+
 ## Notes
-- Split is speaker-disjoint: the held-out reciter is `test`. With only a few ayahs the split is
-  NOT ayah-disjoint, so test scores are optimistic.
-- **Audio licence: not yet checked.** Keep this dataset private until it has been.
-"""
+- Split is speaker-disjoint: the held-out reciter (`hudhaify`) is `test`. With only a few ayahs the split
+  is NOT ayah-disjoint, so test scores are optimistic.
+- Pilot scale: 10 ayahs x 4 reciters.
+""" + END + "\n"
+
+
+def merge_card(existing, block=CARD):
+    """Put `block` into a card body: replace our marked block, replace an older unmarked version of it,
+    or prepend it. Keeps any other text that was there."""
+    existing = existing or ""
+    if START in existing and END in existing:
+        i, j = existing.index(START), existing.index(END) + len(END)
+        return existing[:i] + block.rstrip("\n") + existing[j:]
+    if "# Quran tajweed pilot" in existing:  # first version had no markers and was the whole body
+        return block
+    return block + "\n" + existing
 
 
 def main():
@@ -46,7 +72,23 @@ def main():
     ap.add_argument("--public", action="store_true", help="make the dataset public (default: private)")
     ap.add_argument("--holdout", default="hudhaify", help="speaker_id used as the test split; '' for none")
     ap.add_argument("--dry-run", action="store_true", help="build and verify locally, upload nothing")
+    ap.add_argument("--update-card", action="store_true",
+                    help="only refresh the dataset card text of an already-uploaded dataset (no data upload)")
     a = ap.parse_args()
+
+    if a.update_card:
+        from huggingface_hub import HfApi, DatasetCard
+        try:
+            user = HfApi().whoami()["name"]
+        except Exception:
+            sys.exit("Not logged in. Run:  python -c \"from huggingface_hub import login; login()\"")
+        repo = a.repo or f"{user}/quran-tajweed-iqlab-pilot"
+        card = DatasetCard.load(repo)
+        card.data.license = "other"
+        card.text = merge_card(card.text)
+        card.push_to_hub(repo)
+        print(f"card updated: https://huggingface.co/datasets/{repo}")
+        return
 
     try:
         from datasets import Dataset, DatasetDict, Audio, Features, Value, load_from_disk
@@ -130,9 +172,9 @@ def main():
     dd.push_to_hub(repo, private=private)
     try:  # add the dataset card text, keeping the metadata push_to_hub generated
         card = DatasetCard.load(repo)
-        if "Quran tajweed pilot" not in (card.text or ""):
-            card.text = CARD + "\n" + (card.text or "")
-            card.push_to_hub(repo)
+        card.data.license = "other"
+        card.text = merge_card(card.text)
+        card.push_to_hub(repo)
     except Exception as e:
         print("note: dataset card not updated:", repr(e)[:150])
     print(f"done: https://huggingface.co/datasets/{repo}")
