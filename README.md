@@ -96,3 +96,18 @@ Needs Python 3.8+ and ffmpeg. If ffmpeg is not on PATH, run `python -m pip insta
 - **Layout:** audio is grouped by surah, then ayah: `audio/SSS/AAA/<speaker_id>.wav` (e.g. `audio/002/010/hudhaify.wav`). Downloads are cached separately in `audio_raw/<EveryAyah folder>/SSSAAA.mp3`. Running the script on an older per-reciter layout (`audio/<speaker>/SSSAAA.wav`) moves the files into the new one.
 - **Manifest columns:** the 8 dataset columns, then `source_url` and `duration_s`. `phoneme_realized` is left empty (not annotated); fine-tuning uses `phoneme_ref`.
 - **Not yet done:** the audio licence has not been checked; do not redistribute the audio until it has.
+
+## Uploading to Hugging Face (private)
+
+`scripts/push_to_hf.py` packages `manifest/recordings.csv` and the WAVs as a Hugging Face dataset (columns: `id`, `tajweed_target`, `surah`, `ayah`, `speaker_id`, `audio`, `ayah_uthmani`, `phoneme_ref`, `phoneme_realized`, `duration_s`, `source_url`).
+
+```bash
+python -m pip install datasets huggingface_hub
+hf auth login                      # token with WRITE access; never paste it in chat
+python scripts/push_to_hf.py --dry-run   # build and verify locally, uploads nothing
+python scripts/push_to_hf.py             # upload as a PRIVATE dataset: <username>/quran-tajweed-iqlab-pilot
+```
+
+- **Split:** speaker-disjoint. `--holdout hudhaify` (default) makes that reciter the `test` split, and the rest are `train`. With only 10 ayahs the split is not ayah-disjoint, so test scores will be optimistic.
+- **Private by default.** The audio licence has not been checked; do not use `--public` until it has.
+- Reading the audio back for training needs a decoder (`pip install torchcodec`, or load with `Audio(decode=False)` and decode the bytes with `soundfile`).

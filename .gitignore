@@ -1,4 +1,7 @@
-__pycache__/
 *.pyc
+__pycache__/
+audio/
+audio_raw/
+hf_dryrun/
 node_modules/
 venv/
