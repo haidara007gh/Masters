@@ -78,3 +78,20 @@ Occurrences come from the Qur'anic Phonemizer's explicit rule labels (`quranic-p
 - Tanween or noon before the article ٱل is not Idgham (hamza wasl drops, so it is izhar); the phonemizer follows this.
 - Two `within_word` sites are the huroof muqatta'at `طسٓمٓ` (26:1, 28:1), counted under `idgham_bi_ghunnah_meem`; decide whether to keep them for recording.
 - Same caveat as Iqlab: machine-generated, not yet verified by a Tajweed expert.
+
+---
+
+## Audio pipeline (pilot: Iqlab, first 10 ayahs, 3 reciters)
+
+`scripts/fetch_audio.py` downloads ayah-level recitations, converts them to 16 kHz mono WAV and writes `manifest/recordings.csv` (one row per recording). Run from the dataset folder:
+
+```bash
+python scripts/fetch_audio.py --target iqlab --limit 10
+```
+
+Needs Python 3.8+ and `ffmpeg` on PATH (no other packages). Downloads are cached in `audio_raw/`, so re-runs only fetch what is missing.
+
+- **Ayahs:** 2:10, 2:18, 2:19, 2:27, 2:31, 2:33, 2:41, 2:51, 2:52, 2:56 (the first 10 Iqlab ayahs in Quran order).
+- **Reciters** (speaker ids -> EveryAyah folders): `alafasy` (Alafasy_128kbps), `husary` (Husary_128kbps), `minshawy` (Minshawy_Murattal_128kbps). The folder names have **not** been verified against the live site; a wrong name shows up as an HTTP 404 in the end-of-run report.
+- **Manifest columns:** the 8 dataset columns, then `source_url` and `duration_s`. `phoneme_realized` is left empty (not annotated); fine-tuning uses `phoneme_ref`.
+- **Not yet done:** the audio licence has not been checked; do not redistribute the audio until it has.
