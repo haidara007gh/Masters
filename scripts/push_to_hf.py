@@ -50,8 +50,12 @@ def main():
 
     try:
         from datasets import Dataset, DatasetDict, Audio, Features, Value, load_from_disk
-    except ImportError:
-        sys.exit("Missing packages. Run:  python -m pip install datasets huggingface_hub")
+    except ImportError as e:
+        import traceback
+        traceback.print_exc()
+        sys.exit(f"\nCould not import `datasets` ({e!r}).\n"
+                 f"Python in use: {sys.executable} ({sys.version.split()[0]})\n"
+                 "If the message says 'No module named ...', run:  python -m pip install datasets huggingface_hub")
 
     root = Path(a.root)
     rows = list(csv.DictReader(open(root / "manifest" / "recordings.csv", encoding="utf-8-sig")))
