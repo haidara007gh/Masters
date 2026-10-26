@@ -111,3 +111,11 @@ python scripts/push_to_hf.py             # upload as a PRIVATE dataset: <usernam
 - **Split:** speaker-disjoint. `--holdout hudhaify` (default) makes that reciter the `test` split, and the rest are `train`. With only 10 ayahs the split is not ayah-disjoint, so test scores will be optimistic.
 - **Private by default.** The audio licence has not been checked; do not use `--public` until it has.
 - Reading the audio back for training needs a decoder (`pip install torchcodec`, or load with `Audio(decode=False)` and decode the bytes with `soundfile`).
+
+## Local viewer
+
+```bash
+python3 scripts/make_viewer.py     # writes viewer.html (stdlib only)
+```
+
+Open `viewer.html` in a browser (keep it in the dataset folder so the relative audio paths resolve). It shows one row per recording with an audio player, the Uthmani text, `phoneme_ref` / `phoneme_realized` (nasal tajweed phonemes highlighted; change with `--highlight`), and search, filters (reciter, surah, target) and sortable columns. Re-run it after `fetch_audio.py`.

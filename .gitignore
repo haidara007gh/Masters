@@ -5,3 +5,4 @@ audio_raw/
 hf_dryrun/
 node_modules/
 venv/
+viewer.html
