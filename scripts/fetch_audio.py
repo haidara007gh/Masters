@@ -4,8 +4,8 @@
 Usage (run from the Dataset folder):
     python scripts/fetch_audio.py --target iqlab --limit 10
 
-Needs: Python 3.8+ and ffmpeg on PATH (conda install ffmpeg / brew install ffmpeg).
-No third-party Python packages.
+Needs: Python 3.8+ and ffmpeg. ffmpeg is taken from PATH if present; otherwise from the
+pip package imageio-ffmpeg (python -m pip install imageio-ffmpeg), which bundles a binary.
 
 Layout produced:
     audio_raw/<reciter_folder>/SSSAAA.mp3     cached downloads (re-runs skip these)
@@ -52,9 +52,23 @@ def download(url, dest, tries=3):
     return err
 
 
+def find_ffmpeg():
+    exe = shutil.which("ffmpeg")
+    if exe:
+        return exe
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return None
+
+
+FFMPEG = None
+
+
 def to_wav(src, dst):
     dst.parent.mkdir(parents=True, exist_ok=True)
-    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", str(src),
+    cmd = [FFMPEG, "-y", "-loglevel", "error", "-i", str(src),
            "-ac", "1", "-ar", "16000", "-sample_fmt", "s16", str(dst)]
     p = subprocess.run(cmd, capture_output=True, text=True)
     if p.returncode != 0:
@@ -72,8 +86,11 @@ def main():
     ap.add_argument("--reciters", nargs="*", default=list(RECITERS), help="speaker ids")
     a = ap.parse_args()
 
-    if shutil.which("ffmpeg") is None:
-        sys.exit("ffmpeg not found. Install it (conda install ffmpeg  or  brew install ffmpeg).")
+    global FFMPEG
+    FFMPEG = find_ffmpeg()
+    if FFMPEG is None:
+        sys.exit("ffmpeg not found. Run:  python -m pip install imageio-ffmpeg")
+    print("using ffmpeg:", FFMPEG)
 
     root = Path(a.root)
     src = root / "data" / f"{a.target}_dataset.csv"

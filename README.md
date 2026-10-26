@@ -89,7 +89,7 @@ Occurrences come from the Qur'anic Phonemizer's explicit rule labels (`quranic-p
 python scripts/fetch_audio.py --target iqlab --limit 10
 ```
 
-Needs Python 3.8+ and `ffmpeg` on PATH (no other packages). Downloads are cached in `audio_raw/`, so re-runs only fetch what is missing.
+Needs Python 3.8+ and ffmpeg. If ffmpeg is not on PATH, run `python -m pip install imageio-ffmpeg` (the script uses its bundled binary). Downloads are cached in `audio_raw/`, so re-runs only fetch what is missing.
 
 - **Ayahs:** 2:10, 2:18, 2:19, 2:27, 2:31, 2:33, 2:41, 2:51, 2:52, 2:56 (the first 10 Iqlab ayahs in Quran order).
 - **Reciters** (speaker ids -> EveryAyah folders): `alafasy` (Alafasy_128kbps), `husary` (Husary_128kbps), `minshawy` (Minshawy_Murattal_128kbps). The folder names have **not** been verified against the live site; a wrong name shows up as an HTTP 404 in the end-of-run report.
