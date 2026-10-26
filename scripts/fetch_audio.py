@@ -9,7 +9,7 @@ pip package imageio-ffmpeg (python -m pip install imageio-ffmpeg), which bundles
 
 Layout produced:
     audio_raw/<reciter_folder>/SSSAAA.mp3     cached downloads (re-runs skip these)
-    audio/<speaker_id>/SSSAAA.wav             16 kHz, mono, 16-bit
+    audio/SSS/AAA/<speaker_id>.wav            16 kHz, mono, 16-bit (grouped by surah, then ayah)
     manifest/recordings.csv                   one row per recording
 """
 import argparse, csv, subprocess, sys, time, urllib.request, urllib.error, wave, shutil
@@ -21,6 +21,7 @@ RECITERS = {
     "alafasy": "Alafasy_128kbps",
     "husary": "Husary_128kbps",
     "minshawy": "Minshawy_Murattal_128kbps",
+    "hudhaify": "Hudhaify_128kbps",
 }
 DEFAULT_BASE = "https://everyayah.com/data"
 FIELDS = ["tajweed_target", "surah", "ayah", "speaker_id", "audio", "ayah_uthmani",
@@ -106,11 +107,18 @@ def main():
             code = f"{int(r['surah']):03d}{int(r['ayah']):03d}"
             url = f"{a.base_url}/{folder}/{code}.mp3"
             raw = root / "audio_raw" / folder / f"{code}.mp3"
-            wav = root / "audio" / spk / f"{code}.wav"
+            wav = root / "audio" / f"{int(r['surah']):03d}" / f"{int(r['ayah']):03d}" / f"{spk}.wav"
+            old_wav = root / "audio" / spk / f"{code}.wav"  # previous layout: audio/<speaker>/SSSAAA.wav
             err = download(url, raw)
             dur = None
             if err is None:
-                dur, err = to_wav(raw, wav)
+                if old_wav.exists() and not wav.exists():
+                    wav.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.move(str(old_wav), str(wav))
+                    with wave.open(str(wav), "rb") as w_:
+                        dur = round(w_.getnframes() / w_.getframerate(), 2)
+                else:
+                    dur, err = to_wav(raw, wav)
             if err:
                 failures.append((spk, code, err))
                 print(f"  FAIL {spk} {code}: {err}")
@@ -124,6 +132,12 @@ def main():
             })
         print(f"{spk}: done")
 
+    for spk in a.reciters:  # tidy up the old per-reciter folders if they are now empty
+        try:
+            (root / "audio" / spk).rmdir()
+        except OSError:
+            pass
+    rows.sort(key=lambda x: (int(x["surah"]), int(x["ayah"]), x["speaker_id"]))
     out = root / "manifest" / "recordings.csv"
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "w", encoding="utf-8-sig", newline="") as f:
