@@ -209,6 +209,8 @@ def main():
         seed=a.seed)
     # keyword names differ across transformers versions
     kw["eval_strategy" if "eval_strategy" in accepted else "evaluation_strategy"] = "epoch"
+    if "save_only_model" in accepted:
+        kw["save_only_model"] = True                 # checkpoints hold weights only (~1.3 GB for 300m, not ~3.8 GB)
     if "warmup_ratio" in accepted:
         kw["warmup_ratio"] = a.warmup_ratio          # transformers 4.x
     else:
@@ -243,6 +245,9 @@ def main():
     final = out / "final"
     trainer.save_model(str(final)); fe.save_pretrained(str(final))
     json.dump(vocab, open(final / "vocab.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    import shutil
+    for ck in out.glob("checkpoint-*"):              # the final model is saved; drop intermediate checkpoints
+        shutil.rmtree(ck, ignore_errors=True)
     print(f"model, vocab, predictions.csv and summary.json saved in {out}")
     if a.hub_model_id:
         model.push_to_hub(a.hub_model_id, private=True); fe.push_to_hub(a.hub_model_id, private=True)

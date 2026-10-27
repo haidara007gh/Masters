@@ -28,8 +28,9 @@ Fine-tunes XLS-R with CTC on `phoneme_ref`, following Hafs2Vec (Ibrahim, 2025). 
     code("!nvidia-smi --query-gpu=name,memory.total --format=csv"),
     md("## 1. Install\nVersions are pinned to the ones the script was tested with."),
     code("!pip install -q transformers==5.21.0 datasets==5.1.0 accelerate==1.15.0 soundfile"),
-    md("## 2. Save results to Google Drive (recommended)\nColab deletes `/content` when the session ends. "
-       "Mount Drive so the trained model and predictions survive. Skip this cell to keep results in `/content` only."),
+    md("## 2. Mount Google Drive (to keep the results)\nTraining writes to Colab's local disk, which is fast and is "
+       "wiped when the session ends. After training, a cell copies only the final model and results to Drive "
+       "(about 1.3 GB). Do not train straight into Drive: checkpoints pile up in Drive's cache and Trash and fill the disk."),
     code("from google.colab import drive\ndrive.mount('/content/drive')"),
     md("## 3. Write the training script and phoneme vocabulary\n"
        "Generated from `training/train_ctc.py` and `training/vocab.json` in the repo; no need to edit."),
@@ -45,14 +46,29 @@ Set `DATASET` to your Hugging Face dataset. Model choice:
 import os
 DATASET = "YOUR_HF_USERNAME/quran-tajweed-iqlab-pilot"   # <- change this
 MODEL = "facebook/wav2vec2-xls-r-300m"
-OUTPUT_DIR = "/content/drive/MyDrive/thesis_runs/iqlab_pilot_300m" if os.path.isdir("/content/drive") else "/content/iqlab_pilot_300m"
+RUN_NAME = "iqlab_pilot_300m"
+OUTPUT_DIR = f"/content/{RUN_NAME}"                       # local disk while training
+DRIVE_DIR = f"/content/drive/MyDrive/thesis_runs/{RUN_NAME}"  # where the results are copied afterwards
 EPOCHS, LR, BATCH, ACCUM = 60, 1e-4, 2, 4
-print(OUTPUT_DIR)
+print(OUTPUT_DIR, "->", DRIVE_DIR)
 '''),
+    code("!df -h /content | tail -1   # free disk before training"),
     md("## 5. Train\nPrints evaluation (PER, sub/del/ins, accuracy on `m̃`) after every epoch on the held-out reciter."),
     code('!python train_ctc.py --dataset "{DATASET}" --model "{MODEL}" --output_dir "{OUTPUT_DIR}" '
          '--epochs {EPOCHS} --lr {LR} --batch_size {BATCH} --grad_accum {ACCUM}'),
-    md("## 6. Results"),
+    md("## 6. Copy the results to Drive\nCopies `final/` (the model), `predictions.csv` and `summary.json`. Checkpoints are not copied."),
+    code('''
+import os, shutil
+if os.path.isdir("/content/drive/MyDrive"):
+    os.makedirs(DRIVE_DIR, exist_ok=True)
+    for name in ["summary.json", "predictions.csv"]:
+        shutil.copy(f"{OUTPUT_DIR}/{name}", DRIVE_DIR)
+    shutil.copytree(f"{OUTPUT_DIR}/final", f"{DRIVE_DIR}/final", dirs_exist_ok=True)
+    print("copied to", DRIVE_DIR)
+else:
+    print("Drive is not mounted; results are only in", OUTPUT_DIR)
+'''),
+    md("## 7. Results"),
     code('''
 import json, pandas as pd
 print(json.dumps(json.load(open(f"{OUTPUT_DIR}/summary.json")), indent=1, ensure_ascii=False))
