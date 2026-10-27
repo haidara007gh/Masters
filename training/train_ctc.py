@@ -194,7 +194,9 @@ def main():
         return per_report(refs, hyps, a.focus)
 
     cuda = torch.cuda.is_available()
-    bf16 = cuda and torch.cuda.is_bf16_supported()
+    # bf16 only on GPUs with native support (compute capability 8+: A100, L4, H100). On a T4 (7.5),
+    # torch.cuda.is_bf16_supported() can report emulated support, which is slower than fp16.
+    bf16 = cuda and torch.cuda.get_device_capability()[0] >= 8
     import inspect
     accepted = inspect.signature(TrainingArguments.__init__).parameters
     kw = dict(
@@ -215,6 +217,7 @@ def main():
     trainer = Trainer(model=model, args=args, train_dataset=dd[a.train_split], eval_dataset=dd[a.eval_split],
                       data_collator=Collator(fe, vocab), compute_metrics=metrics,
                       preprocess_logits_for_metrics=argmax_logits)
+    print(f"device: {torch.cuda.get_device_name(0) if cuda else 'cpu'}, precision: {'bf16' if bf16 else 'fp16' if cuda else 'fp32'}")
     trainer.train()
 
     # final evaluation with per-utterance predictions
