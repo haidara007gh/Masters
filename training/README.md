@@ -9,7 +9,8 @@ author also wrote the Quranic Phonemizer used for our labels.
 | `finetune_colab.ipynb` | Colab notebook: upload it to Colab, set `DATASET`, run top to bottom |
 | `train_ctc.py` | The training script (embedded in the notebook) |
 | `vocab.json` | 68 Hafs phonemes + `<blank>` (id 0) + `<unk>`, built from all 6,236 ayahs |
-| `make_notebook.py` | Regenerates the notebook after editing `train_ctc.py` or `vocab.json` |
+| `evaluate_ctc.py` | Scores an already-trained model on any split (e.g. `--split train`), no training |
+| `make_notebook.py` | Regenerates the notebook after editing `train_ctc.py`, `evaluate_ctc.py` or `vocab.json` |
 
 ## What follows the paper
 - wav2vec2 XLS-R + CTC on Tajweed-aware phonemes from the Quranic Phonemizer
@@ -32,8 +33,12 @@ and `final/` (model, feature extractor config, vocab).
 
 ## Expectations for the pilot
 With ~30 training clips, expect a high test PER: CTC models first learn to output nothing. That is fine;
-the goal is a working pipeline. Sanity check: `--eval_split train` should overfit (PER falling well below
-100%). Scale up next by fetching more Iqlab ayahs (`fetch_audio.py --limit`).
+the goal is a working pipeline. Sanity check without retraining:
+`python evaluate_ctc.py --model_dir <run>/final --dataset <dataset> --split train`. Training PER well below 100%
+means the model learned the training voices.
+
+The final model is chosen by `--select_best`: `loss` (default, lowest eval loss), `per`, or `last`. Selecting by
+PER keeps the earliest epoch on ties, so a run stuck at PER 100 would keep the epoch-1 model. Scale up next by fetching more Iqlab ayahs (`fetch_audio.py --limit`).
 
 ## Tested
 Locally on CPU with a tiny randomly-initialised wav2vec2 and stand-in audio (transformers 5.21, datasets 5.1,

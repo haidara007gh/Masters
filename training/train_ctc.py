@@ -145,6 +145,9 @@ def main():
     ap.add_argument("--max_duration", type=float, default=60.0,
                     help="drop clips longer than this many seconds (Hafs2Vec: 10)")
     ap.add_argument("--focus", nargs="*", default=["m̃"], help="phonemes to report recognition accuracy for")
+    ap.add_argument("--select_best", choices=["loss", "per", "last"], default="loss",
+                    help="which checkpoint becomes the final model: lowest eval loss (default), lowest eval PER "
+                         "(ties keep the EARLIER epoch, so a run stuck at PER 100 would keep epoch 1), or the last epoch")
     ap.add_argument("--no_gradient_checkpointing", action="store_true")
     ap.add_argument("--hub_model_id", default=None, help="push the final model to this HF repo (optional)")
     ap.add_argument("--seed", type=int, default=42)
@@ -203,10 +206,14 @@ def main():
         output_dir=a.output_dir, per_device_train_batch_size=a.batch_size, per_device_eval_batch_size=a.batch_size,
         gradient_accumulation_steps=a.grad_accum, learning_rate=a.lr,
         num_train_epochs=a.epochs, max_steps=a.max_steps, optim="adamw_torch", lr_scheduler_type="linear",
-        fp16=cuda and not bf16, bf16=bf16, save_strategy="epoch", save_total_limit=1,
-        load_best_model_at_end=True, metric_for_best_model="per", greater_is_better=False,
+        fp16=cuda and not bf16, bf16=bf16, save_total_limit=1,
         logging_steps=5, report_to="none", remove_unused_columns=False, dataloader_num_workers=2 if cuda else 0,
         seed=a.seed)
+    if a.select_best == "last":
+        kw.update(save_strategy="no", load_best_model_at_end=False)       # no checkpoints; keep the final weights
+    else:
+        kw.update(save_strategy="epoch", load_best_model_at_end=True, greater_is_better=False,
+                  metric_for_best_model=a.select_best)                   # "loss" -> eval_loss, "per" -> eval_per
     # keyword names differ across transformers versions
     kw["eval_strategy" if "eval_strategy" in accepted else "evaluation_strategy"] = "epoch"
     if "save_only_model" in accepted:
@@ -230,7 +237,8 @@ def main():
     refs = [r.split() for r in list(ev["phoneme_ref"])]
     summary = per_report(refs, hyps, a.focus)
     summary.update({"model": a.model, "train_clips": len(dd[a.train_split]), "eval_clips": len(ev),
-                    "eval_split": a.eval_split})
+                    "eval_split": a.eval_split, "selected_by": a.select_best,
+                    "selected_checkpoint": trainer.state.best_model_checkpoint})
     with open(out / "predictions.csv", "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f)
         w.writerow(["id", "speaker_id", "surah", "ayah", "per", "sub", "del", "ins", "phoneme_ref", "phoneme_pred"])

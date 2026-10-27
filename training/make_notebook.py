@@ -5,6 +5,7 @@ from pathlib import Path
 
 here = Path(__file__).parent
 script = (here / "train_ctc.py").read_text(encoding="utf-8")
+evaluator = (here / "evaluate_ctc.py").read_text(encoding="utf-8")
 vocab = (here / "vocab.json").read_text(encoding="utf-8")
 
 
@@ -36,6 +37,7 @@ Fine-tunes XLS-R with CTC on `phoneme_ref`, following Hafs2Vec (Ibrahim, 2025). 
        "Generated from `training/train_ctc.py` and `training/vocab.json` in the repo; no need to edit."),
     code("%%writefile train_ctc.py\n" + script),
     code("%%writefile vocab.json\n" + vocab),
+    code("%%writefile evaluate_ctc.py\n" + evaluator),
     md("""
 ## 4. Settings
 Set `DATASET` to your Hugging Face dataset. Model choice:
@@ -76,12 +78,17 @@ pd.set_option("display.max_colwidth", 120)
 pd.read_csv(f"{OUTPUT_DIR}/predictions.csv")[["id", "per", "sub", "del", "ins", "phoneme_ref", "phoneme_pred"]]
 '''),
     md("""
-## If the test PER stays near 100%
-With 30 training clips that is normal: CTC models first learn to output nothing. Check that the model *can*
-learn by evaluating on the training reciters (it should overfit them):
-
-`!python train_ctc.py --dataset "{DATASET}" --output_dir /content/overfit --eval_split train --epochs 100`
+## 8. Did the model learn anything? Evaluate on the training reciters
+No retraining: this scores the model you just trained on the `train` split (Alafasy, Husary, Minshawy).
+If training PER is well below 100% while test PER is near 100%, the model learned but does not yet
+generalise to a new voice. If both are near 100%, it is still in the blank phase: train longer or add data.
+Works after a restart too: point `MODEL_DIR` at `DRIVE_DIR + "/final"`.
 """),
+    code('''
+MODEL_DIR = f"{OUTPUT_DIR}/final" if os.path.isdir(f"{OUTPUT_DIR}/final") else f"{DRIVE_DIR}/final"
+!python evaluate_ctc.py --model_dir "{MODEL_DIR}" --dataset "{DATASET}" --split train --output_dir "{OUTPUT_DIR}"
+pd.read_csv(f"{OUTPUT_DIR}/predictions_train.csv")[["id", "per", "sub", "del", "ins", "phoneme_ref", "phoneme_pred"]]
+'''),
 ]
 
 nb = {"cells": cells, "metadata": {"accelerator": "GPU", "colab": {"provenance": []},
