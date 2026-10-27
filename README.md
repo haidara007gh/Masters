@@ -119,3 +119,9 @@ python3 scripts/make_viewer.py     # writes viewer.html (stdlib only)
 ```
 
 Open `viewer.html` in a browser (keep it in the dataset folder so the relative audio paths resolve). It shows one row per recording with an audio player, the Uthmani text, `phoneme_ref` / `phoneme_realized` (nasal tajweed phonemes highlighted; change with `--highlight`), and search, filters (reciter, surah, target) and sortable columns. Re-run it after `fetch_audio.py`.
+
+---
+
+## Fine-tuning (pilot)
+
+See [`training/README.md`](training/README.md). Upload `training/finetune_colab.ipynb` to Google Colab, set your dataset name, and run it top to bottom. It fine-tunes XLS-R with CTC on `phoneme_ref`, following Hafs2Vec (Ibrahim, 2025).
