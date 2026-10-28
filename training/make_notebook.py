@@ -82,9 +82,10 @@ pd.read_csv(f"{OUTPUT_DIR}/predictions.csv")[["id", "per", "sub", "del", "ins", 
 No retraining: this scores the model you just trained on the `train` split (Alafasy, Husary, Minshawy).
 If training PER is well below 100% while test PER is near 100%, the model learned but does not yet
 generalise to a new voice. If both are near 100%, it is still in the blank phase: train longer or add data.
-Works after a restart too: point `MODEL_DIR` at `DRIVE_DIR + "/final"`.
+**In a new session you can skip training:** run steps 1 to 4, then this cell. It loads `final/` from local disk or, if that is gone, from Drive.
 """),
     code('''
+import os, pandas as pd   # self-contained: works without running step 7
 MODEL_DIR = f"{OUTPUT_DIR}/final" if os.path.isdir(f"{OUTPUT_DIR}/final") else f"{DRIVE_DIR}/final"
 !python evaluate_ctc.py --model_dir "{MODEL_DIR}" --dataset "{DATASET}" --split train --output_dir "{OUTPUT_DIR}"
 pd.read_csv(f"{OUTPUT_DIR}/predictions_train.csv")[["id", "per", "sub", "del", "ins", "phoneme_ref", "phoneme_pred"]]
