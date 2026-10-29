@@ -105,6 +105,61 @@ def side_by_side(ops, line=96):
     return "\n".join(out)
 
 
+# --------------------------------------------------------------------------- reusable steps (also used by notebook step 10)
+def load_model(model_dir):
+    """Load model, feature extractor and vocabulary once; returns a dict passed to transcribe()."""
+    import torch
+    from transformers import Wav2Vec2FeatureExtractor, Wav2Vec2ForCTC
+    md = Path(model_dir)
+    vocab = json.load(open(md / "vocab.json", encoding="utf-8"))
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    return {"model": Wav2Vec2ForCTC.from_pretrained(str(md)).to(dev).eval(),
+            "fe": Wav2Vec2FeatureExtractor.from_pretrained(str(md)),
+            "inv": {i: t for t, i in vocab.items()}, "dev": dev}
+
+
+def transcribe(wav, m):
+    """16 kHz mono samples -> list of predicted phonemes (greedy CTC)."""
+    import torch
+    x = m["fe"](wav, sampling_rate=16000, return_attention_mask=True, return_tensors="pt")
+    with torch.no_grad():
+        ids = m["model"](input_values=x["input_values"].to(m["dev"]),
+                         attention_mask=x["attention_mask"].to(m["dev"])).logits.argmax(-1)[0]
+    return ctc_greedy(ids.cpu().tolist(), m["inv"])
+
+
+def report(name, wav, ayah, ref, hyp):
+    """Print the prediction, and the aligned comparison when there is a reference."""
+    print(f"\n=== {name}  ({len(wav) / 16000:.1f} s{', ayah ' + ayah if ayah else ''})")
+    if ref is None:
+        print("predicted:", " ".join(hyp) if hyp else "(nothing: the model output only blanks)")
+        return
+    ops, s, d, i = align(ref, hyp)
+    per = 100 * (s + d + i) / max(len(ref), 1)
+    print(f"PER {per:.1f}%   {s} substitutions, {d} deletions, {i} insertions, {len(ref)} reference phonemes")
+    print(side_by_side(ops))
+
+
+def result_row(name, speaker, ayah, ref, hyp):
+    sa = (ayah or "0:0").split(":")
+    return {"id": Path(name).stem, "speaker_id": speaker or Path(name).stem, "surah": sa[0], "ayah": sa[1],
+            "ref": ref, "hyp": hyp}
+
+
+def write_csv(results, path):
+    """Write results in predictions.csv format (opens in the Phoneme Alignment Viewer)."""
+    with open(path, "w", encoding="utf-8-sig", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["id", "speaker_id", "surah", "ayah", "per", "sub", "del", "ins", "phoneme_ref", "phoneme_pred"])
+        for r in results:
+            if r["ref"] is None:
+                w.writerow([r["id"], r["speaker_id"], r["surah"], r["ayah"], "", "", "", "", "", " ".join(r["hyp"])])
+            else:
+                _, s, d, i = align(r["ref"], r["hyp"])
+                w.writerow([r["id"], r["speaker_id"], r["surah"], r["ayah"], round(100 * (s + d + i) / max(len(r["ref"]), 1), 2),
+                            s, d, i, " ".join(r["ref"]), " ".join(r["hyp"])])
+
+
 # --------------------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -118,15 +173,7 @@ def main():
     ap.add_argument("--out", help="write results to this CSV (predictions.csv format)")
     a = ap.parse_args()
 
-    import torch
-    from transformers import Wav2Vec2FeatureExtractor, Wav2Vec2ForCTC
-
-    md = Path(a.model_dir)
-    vocab = json.load(open(md / "vocab.json", encoding="utf-8"))
-    inv = {i: t for t, i in vocab.items()}
-    fe = Wav2Vec2FeatureExtractor.from_pretrained(str(md))
-    dev = "cuda" if torch.cuda.is_available() else "cpu"
-    model = Wav2Vec2ForCTC.from_pretrained(str(md)).to(dev).eval()
+    m = load_model(a.model_dir)
     ffmpeg = find_ffmpeg()
     if not ffmpeg:
         print("note: ffmpeg not found; only wav/flac/ogg can be read (pip install imageio-ffmpeg for other formats)")
@@ -134,42 +181,20 @@ def main():
     results, refs, hyps = [], [], []
     for path in a.audio:
         wav = load_audio(path, ffmpeg)
-        x = fe(wav, sampling_rate=16000, return_attention_mask=True, return_tensors="pt")
-        with torch.no_grad():
-            ids = model(input_values=x["input_values"].to(dev), attention_mask=x["attention_mask"].to(dev)).logits.argmax(-1)[0]
-        hyp = ctc_greedy(ids.cpu().tolist(), inv)
-
+        hyp = transcribe(wav, m)
         ayah = ayah_from_path(path) if a.ayah == "auto" else a.ayah
         if a.ayah == "auto" and not ayah:
             print(f"warning: could not read an ayah from '{path}'; showing the prediction only")
         ref = a.ref.split() if a.ref else (reference_for(ayah).split() if ayah else None)
-
-        print(f"\n=== {path}  ({len(wav) / 16000:.1f} s{', ayah ' + ayah if ayah else ''})")
-        if ref is None:
-            print("predicted:", " ".join(hyp) if hyp else "(nothing: the model output only blanks)")
-        else:
-            ops, s, d, i = align(ref, hyp)
-            per = 100 * (s + d + i) / max(len(ref), 1)
-            print(f"PER {per:.1f}%   {s} substitutions, {d} deletions, {i} insertions, {len(ref)} reference phonemes")
-            print(side_by_side(ops))
+        report(path, wav, ayah, ref, hyp)
+        if ref is not None:
             refs.append(ref); hyps.append(hyp)
-        sa = (ayah or "0:0").split(":")
-        results.append({"id": Path(path).stem, "speaker_id": a.speaker or Path(path).stem, "surah": sa[0], "ayah": sa[1],
-                        "ref": ref, "hyp": hyp})
+        results.append(result_row(path, a.speaker, ayah, ref, hyp))
 
     if len(refs) > 1:
         print("OVERALL", json.dumps(per_report(refs, hyps, a.focus), ensure_ascii=False))
     if a.out:
-        with open(a.out, "w", encoding="utf-8-sig", newline="") as f:
-            w = csv.writer(f)
-            w.writerow(["id", "speaker_id", "surah", "ayah", "per", "sub", "del", "ins", "phoneme_ref", "phoneme_pred"])
-            for r in results:
-                if r["ref"] is None:
-                    w.writerow([r["id"], r["speaker_id"], r["surah"], r["ayah"], "", "", "", "", "", " ".join(r["hyp"])])
-                else:
-                    _, s, d, i = align(r["ref"], r["hyp"])
-                    w.writerow([r["id"], r["speaker_id"], r["surah"], r["ayah"], round(100 * (s + d + i) / max(len(r["ref"]), 1), 2),
-                                s, d, i, " ".join(r["ref"]), " ".join(r["hyp"])])
+        write_csv(results, a.out)
         print(f"wrote {a.out} (open it in the Phoneme Alignment Viewer)")
 
 

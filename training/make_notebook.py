@@ -111,6 +111,55 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 for name in uploaded:
     !python predict_ctc.py "{name}" --model_dir "{MODEL_DIR}" {AYAH_ARG} --out "{OUTPUT_DIR}/predictions_mine.csv"
 '''),
+    md("""
+## 10. Fast predictions: load once, predict many times, save at the end
+Step 9 starts a new Python process for every run, so each prediction pays for installing, importing and loading
+the 1.3 GB model again. Here the model is loaded **once** into this notebook's memory (10a). Each recording then
+only needs converting and one pass through the model (10b), which you can re-run as often as you like. Results
+stay in memory until you save them (10c). Each cell prints its time, so you can compare with step 9.
+In a new session, run steps 1 to 4 first.
+"""),
+    md("### 10a. Load the model once"),
+    code('''
+!pip install -q quranic-phonemizer==3.0.5
+import os, sys, time, importlib, numpy as np
+sys.path.insert(0, "/content")
+import predict_ctc as pc
+importlib.reload(pc)
+MODEL_DIR = f"{OUTPUT_DIR}/final" if os.path.isdir(f"{OUTPUT_DIR}/final") else f"{DRIVE_DIR}/final"
+t = time.time()
+M = pc.load_model(MODEL_DIR)                       # weights onto the GPU, kept in memory
+FF = pc.find_ffmpeg()                              # audio converter
+pc.reference_for("1:1")                            # start the phonemizer
+pc.transcribe(np.zeros(16000, np.float32), M)      # warm-up pass so the first real prediction is not slower
+live_results = []                                  # predictions collect here until 10c saves them
+print(f"model ready on {M['dev']} in {time.time() - t:.1f} s")
+'''),
+    md("### 10b. Predict (re-run this cell for each new recording)\nSet `AYAH` to the ayah recited, or `\"\"` for the prediction only."),
+    code('''
+from google.colab import files
+AYAH = "2:18"
+uploaded = files.upload()
+for name in uploaded:
+    t = time.time()
+    wav = pc.load_audio(name, FF)
+    hyp = pc.transcribe(wav, M)
+    ref = pc.reference_for(AYAH).split() if AYAH else None
+    took = time.time() - t
+    pc.report(name, wav, AYAH, ref, hyp)
+    live_results.append(pc.result_row(name, "", AYAH, ref, hyp))
+    print(f"prediction took {took:.2f} s  ({len(live_results)} result(s) held in memory)")
+'''),
+    md("### 10c. Save the results\nWrites everything predicted since 10a to `predictions_live.csv` (opens in the Phoneme Alignment Viewer) and copies it to Drive."),
+    code('''
+import shutil
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+path = f"{OUTPUT_DIR}/predictions_live.csv"
+pc.write_csv(live_results, path)
+print(f"saved {len(live_results)} result(s) to {path}")
+if os.path.isdir("/content/drive/MyDrive"):
+    os.makedirs(DRIVE_DIR, exist_ok=True); shutil.copy(path, DRIVE_DIR); print("copied to", DRIVE_DIR)
+'''),
 ]
 
 nb = {"cells": cells, "metadata": {"accelerator": "GPU", "colab": {"provenance": []},
