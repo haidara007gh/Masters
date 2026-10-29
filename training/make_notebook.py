@@ -6,6 +6,7 @@ from pathlib import Path
 here = Path(__file__).parent
 script = (here / "train_ctc.py").read_text(encoding="utf-8")
 evaluator = (here / "evaluate_ctc.py").read_text(encoding="utf-8")
+predictor = (here / "predict_ctc.py").read_text(encoding="utf-8")
 vocab = (here / "vocab.json").read_text(encoding="utf-8")
 
 
@@ -38,6 +39,7 @@ Fine-tunes XLS-R with CTC on `phoneme_ref`, following Hafs2Vec (Ibrahim, 2025). 
     code("%%writefile train_ctc.py\n" + script),
     code("%%writefile vocab.json\n" + vocab),
     code("%%writefile evaluate_ctc.py\n" + evaluator),
+    code("%%writefile predict_ctc.py\n" + predictor),
     md("""
 ## 4. Settings
 Set `DATASET` to your Hugging Face dataset. Model choice:
@@ -89,6 +91,25 @@ import os, pandas as pd   # self-contained: works without running step 7
 MODEL_DIR = f"{OUTPUT_DIR}/final" if os.path.isdir(f"{OUTPUT_DIR}/final") else f"{DRIVE_DIR}/final"
 !python evaluate_ctc.py --model_dir "{MODEL_DIR}" --dataset "{DATASET}" --split train --output_dir "{OUTPUT_DIR}"
 pd.read_csv(f"{OUTPUT_DIR}/predictions_train.csv")[["id", "per", "sub", "del", "ins", "phoneme_ref", "phoneme_pred"]]
+'''),
+    md("""
+## 9. Predict on your own recording
+Upload any recording (wav, mp3, m4a...). The model writes the phonemes it hears. Set `AYAH` to the ayah that was
+recited (e.g. `"2:18"`) to compare with its reference, built with the same phonemizer settings as the dataset, or
+leave it empty for the prediction only. Results also go to `predictions_mine.csv`, which the Phoneme Alignment
+Viewer opens. In a new session, run steps 1 to 4 first.
+"""),
+    code('''
+!pip install -q quranic-phonemizer==3.0.5
+import os
+from google.colab import files
+MODEL_DIR = f"{OUTPUT_DIR}/final" if os.path.isdir(f"{OUTPUT_DIR}/final") else f"{DRIVE_DIR}/final"
+AYAH = "2:18"          # the ayah you recited, or "" for the prediction only
+uploaded = files.upload()
+AYAH_ARG = f"--ayah {AYAH}" if AYAH else ""
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+for name in uploaded:
+    !python predict_ctc.py "{name}" --model_dir "{MODEL_DIR}" {AYAH_ARG} --out "{OUTPUT_DIR}/predictions_mine.csv"
 '''),
 ]
 

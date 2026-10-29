@@ -10,7 +10,8 @@ author also wrote the Quranic Phonemizer used for our labels.
 | `train_ctc.py` | The training script (embedded in the notebook) |
 | `vocab.json` | 68 Hafs phonemes + `<blank>` (id 0) + `<unk>`, built from all 6,236 ayahs |
 | `evaluate_ctc.py` | Scores an already-trained model on any split (e.g. `--split train`), no training |
-| `make_notebook.py` | Regenerates the notebook after editing `train_ctc.py`, `evaluate_ctc.py` or `vocab.json` |
+| `predict_ctc.py` | Phonemes for any recording, optionally compared with an ayah's reference (`--ayah 2:18`); `--out` writes a CSV the Phoneme Alignment Viewer opens |
+| `make_notebook.py` | Regenerates the notebook after editing `train_ctc.py`, `evaluate_ctc.py`, `predict_ctc.py` or `vocab.json` |
 
 ## What follows the paper
 - wav2vec2 XLS-R + CTC on Tajweed-aware phonemes from the Quranic Phonemizer
