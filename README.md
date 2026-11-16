@@ -81,6 +81,54 @@ Occurrences come from the Qur'anic Phonemizer's explicit rule labels (`quranic-p
 
 ---
 
+## Ikhfa dataset (v0.1, text and reference phonemes only)
+
+Scope: **Ikhfa haqiqi**, a noon sakinah or tanween hidden before one of the 15 Ikhfa letters, split by the following letter. Same format and rules as the Iqlab and Idgham datasets: ayah by ayah (a trigger at the very end of an ayah does not count), Hafs, closed-lip `m̃` for Iqlab, no recordings yet. Ikhfa shafawi (meem sakinah before ب) is a separate rule and is not included.
+
+### Files
+
+| File | Contents |
+|---|---|
+| `data/ikhfaa_dataset.csv` | 4,642 rows, one per (target, ayah), covering 2,997 distinct ayahs. An ayah with several targets appears once per target. |
+| `data/ikhfaa_sites.csv` | 5,305 sites: word position, trigger word, next word, `cross_word` / `within_word`, plus `nasal_phoneme` (the hidden nasal) and `following_phoneme` |
+
+### Targets
+
+Target names use the Quranic Phonemizer's own letter names (`CanonLetter`).
+
+| `tajweed_target` | Following letter | Ayahs | Sites |
+|---|---|---:|---:|
+| `ikhfaa_ta` | ت | 880 | 1,093 |
+| `ikhfaa_tha` | ث | 91 | 108 |
+| `ikhfaa_jeem` | ج | 124 | 126 |
+| `ikhfaa_dal` | د | 380 | 406 |
+| `ikhfaa_thal` | ذ | 172 | 180 |
+| `ikhfaa_zay` | ز | 220 | 248 |
+| `ikhfaa_seen` | س | 249 | 263 |
+| `ikhfaa_sheen` | ش | 207 | 215 |
+| `ikhfaa_sad` | ص | 100 | 108 |
+| `ikhfaa_dad` | ض | 30 | 32 |
+| `ikhfaa_tah` | ط | 76 | 79 |
+| `ikhfaa_zah` | ظ | 117 | 121 |
+| `ikhfaa_fa` | ف | 886 | 1,081 |
+| `ikhfaa_qaf` | ق | 493 | 539 |
+| `ikhfaa_kaf` | ك | 617 | 706 |
+
+### Method and validation
+
+Sites come from the Quranic Phonemizer's `ikhfaa` labels (`quranic-phonemizer` 3.0.5). For each site, the phonemizer gives the hidden nasal sound, and the sound right after it gives the following letter, so no Arabic text parsing is needed (`scripts/ikhfaa_all.py`, `scripts/build_ikhfaa.py`).
+
+An independent check reads the Uthmani text directly (`scripts/ikhfaa_check.py`). It agrees on all 5,300 written sites. The phonemizer finds 5 more that the written text cannot show: the noons inside spoken letter names in 19:1 (كٓهيعٓصٓ), 27:1 (طسٓ) and 42:2 (عٓسٓقٓ, two sites), and the second, unwritten noon of نُـۨجِى in 21:88. Where Ikhfa ayahs also appear in the Iqlab or Idgham datasets (2,922 rows), the text and reference phonemes are identical.
+
+### Notes
+
+- **Encoding:** in this Uthmani text the "open" tanween forms, written before Ikhfa and Idgham letters, use U+0657 (fathatan), U+0656 (kasratan) and U+065E (dammatan). A text-based tool that only knows the standard tanween characters misses about 1,500 sites.
+- **Representation:** the phonemizer writes every Ikhfa nasal as the same symbol, `ŋ`, whatever the following letter. A phoneme model can therefore distinguish Ikhfa from a clear noon (`n`) or a merge, but not the exact place of the hidden nasal.
+- **Letter names at surah openings:** the four sites in 19:1, 27:1 and 42:2 are inside huroof muqatta'at; decide whether to keep them for recording.
+- Same caveat as the other datasets: machine-generated, not yet verified by a Tajweed expert.
+
+---
+
 ## Audio pipeline (pilot: Iqlab, first 10 ayahs, 4 reciters)
 
 `scripts/fetch_audio.py` downloads ayah-level recitations, converts them to 16 kHz mono WAV and writes `manifest/recordings.csv` (one row per recording). Run from the dataset folder:
