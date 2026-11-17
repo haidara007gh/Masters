@@ -4,24 +4,25 @@ Working repository for an MSc Data Science thesis at the Islamic University of M
 
 ## Research scope
 
-The thesis covers the three rules of **noon sakinah and tanween** that change how the noon is pronounced: Idgham, Ikhfa and Iqlab. Together they form one family, decided by the letter that follows the noon or tanween.
+The thesis covers all four rules of **noon sakinah and tanween**: Izhar, where the noon stays clear, and Idgham, Iqlab and Ikhfa, where it changes. Together they form one family; which rule applies is decided by the letter that follows the noon or tanween.
 
 | Rule | What happens to the noon | Targets | Ayahs | Sites | Dataset |
 |---|---|---:|---:|---:|---|
+| **Izhar** | Stays clear before a throat letter (ء ه ع ح غ خ), and before و or ي inside four words | 8 | 2,114 | 3,136 | `data/izhar_dataset.csv` |
 | **Idgham** | Merges into the next letter, with ghunnah (ي ن م و) or without (ل ر) | 6 | 2,888 | 4,970 | `data/idgham_dataset.csv` |
-| **Ikhfa** | Hidden with ghunnah before one of 15 letters | 15 | 2,997 | 5,305 | `data/ikhfaa_dataset.csv` |
 | **Iqlab** | Turns into a hummed meem before ب | 1 | 506 | 562 | `data/iqlab_dataset.csv` |
-| **All three** | | 22 | **4,292** | **10,837** | |
+| **Ikhfa** | Hidden with ghunnah before one of 15 letters | 15 | 2,997 | 5,305 | `data/ikhfaa_dataset.csv` |
+| **All four** | | 30 | **4,677** | **13,973** | |
 
-The three rules together occur in 4,292 of the Quran's 6,236 ayahs (68.8%) and in 110 of its 114 surahs; 217 ayahs contain all three. Al-Fatiha and surahs 102, 108 and 110 contain none.
+The four rules together occur in 4,677 of the Quran's 6,236 ayahs (75.0%) and in 113 of its 114 surahs; 125 ayahs contain all four. Only Surah An-Nasr (110) contains none.
 
-**Not in scope:** Izhar (the fourth noon sakinah rule, where the noon stays clear), the meem sakinah rules (Idgham shafawi, Ikhfa shafawi), other kinds of Idgham (mutamathilayn, mutajanisayn, mutaqaribayn), Madd and Qalqalah.
+**Not in scope:** the meem sakinah rules (Idgham shafawi, Ikhfa shafawi), other kinds of Idgham (mutamathilayn, mutajanisayn, mutaqaribayn), and Madd and Qalqalah, which are planned as future work.
 
-### Conventions shared by all three datasets
+### Conventions shared by all four datasets
 
 - **Ayah by ayah.** Each ayah is treated as recited on its own, with a stop at its end, so a noon or tanween at the very end of an ayah is not counted.
-- **Hafs 'an 'Asim**, with reference phonemes from the Quranic Phonemizer 3.0.5 (Ahmed Ibrahim) and Iqlab written as the closed-lip nasal `m̃` (`iqlab_nasal="closed"`). The phonemizer writes every Ikhfa nasal as `ŋ`.
-- **Target names** are the rule plus the following letter, using the phonemizer's own letter names (for example `idgham_bi_ghunnah_ya`, `ikhfaa_qaf`).
+- **Hafs 'an 'Asim**, with reference phonemes from the Quranic Phonemizer 3.0.5 (Ahmed Ibrahim) and Iqlab written as the closed-lip nasal `m̃` (`iqlab_nasal="closed"`). The phonemizer writes every Ikhfa nasal as `ŋ`; an Izhar noon stays a plain `n`.
+- **Target names** are the rule plus the following letter, using the phonemizer's own letter names (for example `izhar_ain`, `idgham_bi_ghunnah_ya`, `ikhfaa_qaf`).
 - **The same 8 columns** in every `*_dataset.csv`: `tajweed_target`, `surah`, `ayah`, `speaker_id`, `audio`, `ayah_uthmani`, `phoneme_ref`, `phoneme_realized`. One row per (target, ayah). Each `*_sites.csv` locates every individual site at word level.
 - **Validated, not yet expert-verified.** Every site list was checked against an independent second method (details in each section below). The labels are machine-generated and still need review by a Tajweed expert.
 
@@ -29,7 +30,7 @@ The three rules together occur in 4,292 of the Quran's 6,236 ayahs (68.8%) and i
 
 | Stage | Status |
 |---|---|
-| Text datasets for Idgham, Ikhfa and Iqlab | Done |
+| Text datasets for Izhar, Idgham, Iqlab and Ikhfa | Done |
 | Audio pilot: Iqlab, 10 ayahs, 4 professional reciters | Done ([Hugging Face dataset](#uploading-to-hugging-face-private)) |
 | Fine-tuning pipeline: XLS-R 300m with CTC on `phoneme_ref`, following Hafs2Vec | Validated on the pilot |
 | Balanced sample of ayahs per rule for recording | Planned |
@@ -40,7 +41,7 @@ The three rules together occur in 4,292 of the Quran's 6,236 ayahs (68.8%) and i
 
 | Folder | Contents |
 |---|---|
-| `data/` | The three rule datasets and their site lists |
+| `data/` | The four rule datasets and their site lists |
 | `scripts/` | Building and checking the datasets, fetching audio, uploading to Hugging Face, the local viewer |
 | `training/` | Fine-tuning, evaluation and prediction scripts, the Colab notebook and the phoneme vocabulary |
 
@@ -171,6 +172,45 @@ An independent check reads the Uthmani text directly (`scripts/ikhfaa_check.py`)
 - **Encoding:** in this Uthmani text the "open" tanween forms, written before Ikhfa and Idgham letters, use U+0657 (fathatan), U+0656 (kasratan) and U+065E (dammatan). A text-based tool that only knows the standard tanween characters misses about 1,500 sites.
 - **Representation:** the phonemizer writes every Ikhfa nasal as the same symbol, `ŋ`, whatever the following letter. A phoneme model can therefore distinguish Ikhfa from a clear noon (`n`) or a merge, but not the exact place of the hidden nasal.
 - **Letter names at surah openings:** the four sites in 19:1, 27:1 and 42:2 are inside huroof muqatta'at; decide whether to keep them for recording.
+- Same caveat as the other datasets: machine-generated, not yet verified by a Tajweed expert.
+
+---
+
+## Izhar dataset (v0.1, text and reference phonemes only)
+
+Scope: a noon sakinah or tanween **kept clear**, pronounced as a plain `n`, split by the reason it stays clear. Same format and rules as the other datasets: ayah by ayah, Hafs, closed-lip `m̃` for Iqlab, no recordings yet. A noon at the very end of an ayah, which is clear only because of the stop, is not counted (3,122 such noons are excluded).
+
+### Files
+
+| File | Contents |
+|---|---|
+| `data/izhar_dataset.csv` | 2,722 rows, one per (target, ayah), covering 2,114 distinct ayahs |
+| `data/izhar_sites.csv` | 3,136 sites: word position, trigger word, next word, `cross_word` / `within_word`, `izhar_type` (`halqi`, `mutlaq` or `special`), `noon_phoneme` and `following_phoneme` |
+
+### Targets
+
+| `tajweed_target` | Why the noon stays clear | Ayahs | Sites |
+|---|---|---:|---:|
+| `izhar_hamza` | Before ء (halqi) | 1,017 | 1,253 |
+| `izhar_heh` | Before ه (halqi) | 617 | 732 |
+| `izhar_ain` | Before ع (halqi) | 552 | 593 |
+| `izhar_ha` | Before ح (halqi) | 207 | 215 |
+| `izhar_ghain` | Before غ (halqi) | 82 | 82 |
+| `izhar_kha` | Before خ (halqi) | 126 | 134 |
+| `izhar_mutlaq` | Before و or ي inside one word: ٱلدُّنْيَا، بُنْيَـٰن، قِنْوَان، صِنْوَان | 119 | 125 |
+| `izhar_special` | نٓ ۚ وَٱلْقَلَمِ (68:1), kept clear in Hafs; مَنْ ۜ رَاقٍ (75:27), kept clear by the sakt | 2 | 2 |
+
+The halqi targets follow the traditional order of the throat letters, ء ه ع ح غ خ, and use the phonemizer's own letter names.
+
+### Method and validation
+
+Sites come from the Quranic Phonemizer's `izhar` labels (`quranic-phonemizer` 3.0.5). For each site, the sound right after the noon gives the following letter (`scripts/izhar_all.py`, `scripts/build_izhar.py`). An independent check reads the Uthmani text directly (`scripts/izhar_check.py`) and agrees exactly: all 3,009 halqi sites and all 125 mutlaq sites, with no ayah differing. Where Izhar ayahs also appear in the other three datasets (2,275 rows), the text and reference phonemes are identical.
+
+### Notes
+
+- **Izhar mirrors Ikhfa.** A clear noon is the typical Ikhfa error, and a hidden or merged noon the typical Izhar error. With both rules, a detector is tested in both directions, not only on whether it hears a nasal.
+- **Errors are visible to a phoneme model.** The correct Izhar noon is `n`; adding ghunnah, hiding it or merging it changes the phoneme string.
+- **يسٓ وَٱلْقُرْءَانِ is not included.** Hafs also keeps that noon clear, but يسٓ is a whole ayah (36:1), so under the ayah-by-ayah rule its noon ends at a stop.
 - Same caveat as the other datasets: machine-generated, not yet verified by a Tajweed expert.
 
 ---
