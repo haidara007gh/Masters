@@ -1,10 +1,56 @@
 # Masters_Quran
 
-Working repository for an MSc Data Science project on automatic assessment of Qur'anic recitation (Tajweed-aware pronunciation assessment / mispronunciation detection and diagnosis).
+Working repository for an MSc Data Science thesis at the Islamic University of Madinah: **automatic detection of Tajweed errors in Qur'anic recitation**. The aim, from the accepted proposal, is to evaluate how effectively AI can detect Tajweed errors and give feedback, using a prototype speech recognition model on recitations in Hafs 'an 'Asim.
+
+## Research scope
+
+The thesis covers the three rules of **noon sakinah and tanween** that change how the noon is pronounced: Idgham, Ikhfa and Iqlab. Together they form one family, decided by the letter that follows the noon or tanween.
+
+| Rule | What happens to the noon | Targets | Ayahs | Sites | Dataset |
+|---|---|---:|---:|---:|---|
+| **Idgham** | Merges into the next letter, with ghunnah (ي ن م و) or without (ل ر) | 6 | 2,888 | 4,970 | `data/idgham_dataset.csv` |
+| **Ikhfa** | Hidden with ghunnah before one of 15 letters | 15 | 2,997 | 5,305 | `data/ikhfaa_dataset.csv` |
+| **Iqlab** | Turns into a hummed meem before ب | 1 | 506 | 562 | `data/iqlab_dataset.csv` |
+| **All three** | | 22 | **4,292** | **10,837** | |
+
+The three rules together occur in 4,292 of the Quran's 6,236 ayahs (68.8%) and in 110 of its 114 surahs; 217 ayahs contain all three. Al-Fatiha and surahs 102, 108 and 110 contain none.
+
+**Not in scope:** Izhar (the fourth noon sakinah rule, where the noon stays clear), the meem sakinah rules (Idgham shafawi, Ikhfa shafawi), other kinds of Idgham (mutamathilayn, mutajanisayn, mutaqaribayn), Madd and Qalqalah.
+
+### Conventions shared by all three datasets
+
+- **Ayah by ayah.** Each ayah is treated as recited on its own, with a stop at its end, so a noon or tanween at the very end of an ayah is not counted.
+- **Hafs 'an 'Asim**, with reference phonemes from the Quranic Phonemizer 3.0.5 (Ahmed Ibrahim) and Iqlab written as the closed-lip nasal `m̃` (`iqlab_nasal="closed"`). The phonemizer writes every Ikhfa nasal as `ŋ`.
+- **Target names** are the rule plus the following letter, using the phonemizer's own letter names (for example `idgham_bi_ghunnah_ya`, `ikhfaa_qaf`).
+- **The same 8 columns** in every `*_dataset.csv`: `tajweed_target`, `surah`, `ayah`, `speaker_id`, `audio`, `ayah_uthmani`, `phoneme_ref`, `phoneme_realized`. One row per (target, ayah). Each `*_sites.csv` locates every individual site at word level.
+- **Validated, not yet expert-verified.** Every site list was checked against an independent second method (details in each section below). The labels are machine-generated and still need review by a Tajweed expert.
+
+## Project status
+
+| Stage | Status |
+|---|---|
+| Text datasets for Idgham, Ikhfa and Iqlab | Done |
+| Audio pilot: Iqlab, 10 ayahs, 4 professional reciters | Done ([Hugging Face dataset](#uploading-to-hugging-face-private)) |
+| Fine-tuning pipeline: XLS-R 300m with CTC on `phoneme_ref`, following Hafs2Vec | Validated on the pilot |
+| Balanced sample of ayahs per rule for recording | Planned |
+| Controlled error recordings: each ayah recited correctly and with a specified error, verified by a Tajweed expert | Planned (main contribution) |
+| Rule-level error detection with accuracy and confidence, and a feedback demo | Planned |
+
+## Repository layout
+
+| Folder | Contents |
+|---|---|
+| `data/` | The three rule datasets and their site lists |
+| `scripts/` | Building and checking the datasets, fetching audio, uploading to Hugging Face, the local viewer |
+| `training/` | Fine-tuning, evaluation and prediction scripts, the Colab notebook and the phoneme vocabulary |
+
+Audio files and model weights are not stored in git; audio is on Hugging Face and models are saved from Colab.
+
+---
 
 ## Iqlab dataset (v0.1, text and reference phonemes only)
 
-The first target rule is **Iqlab** (noon sakinah or tanween followed by ba). This version lists the ayahs that contain it. **No recordings yet.**
+**Iqlab**: a noon sakinah or tanween followed by ب, pronounced as a hummed meem. Text and reference phonemes only; the audio pilot further down covers the first 10 of these ayahs.
 
 ### Files
 
