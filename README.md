@@ -25,6 +25,7 @@ The four rules together occur in 4,677 of the Quran's 6,236 ayahs (75.0%) and in
 - **Target names** are the rule plus the following letter, using the phonemizer's own letter names (for example `izhar_ain`, `idgham_bi_ghunnah_ya`, `ikhfaa_qaf`).
 - **The same 8 columns** in every `*_dataset.csv`: `tajweed_target`, `surah`, `ayah`, `speaker_id`, `audio`, `ayah_uthmani`, `phoneme_ref`, `phoneme_realized`. One row per (target, ayah). Each `*_sites.csv` locates every individual site at word level.
 - **Validated, not yet expert-verified.** Every site list was checked against an independent second method (details in each section below). The labels are machine-generated and still need review by a Tajweed expert.
+- **Word positions** count words the way the phonemizer does: pause signs (ۖ ۚ ۜ…) and the hizb mark (۞) are not words. All 13,973 sites were checked to land on their trigger word in `ayah_uthmani` under that rule.
 
 ## Project status
 
@@ -58,7 +59,7 @@ Audio files and model weights are not stored in git; audio is on Hugging Face an
 | File | Contents |
 |---|---|
 | `data/iqlab_dataset.csv` | 506 ayahs (surahs 1–114), one row per ayah |
-| `data/iqlab_sites.csv` | 562 individual Iqlab sites: word position, trigger word, next word, trigger type, within-word vs across-word |
+| `data/iqlab_sites.csv` | 562 individual Iqlab sites, in the same format as the other rules: word position, trigger word, next word, `cross_word` / `within_word`, `trigger` (`noon_sakinah` or `tanween`), `nasal_phoneme` and `following_phoneme`. Rebuilt from the phonemizer's `iqlab` labels (`scripts/iqlab_sites_phonemizer.py`); every ayah has the same number of sites as before. |
 
 ### Columns of `iqlab_dataset.csv`
 
